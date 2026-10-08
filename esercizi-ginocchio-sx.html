@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#F5F5F7">
+<title>Esercizi ginocchio SX</title>
+<style>
+/* Layout: colonna unica da telefono, schede esercizio con animazione + timer guidato in un pannello fisso in basso */
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#F5F5F7; --surface:#FFFFFF; --fg:#1D1D1F; --muted:#6E6E73; --line:#E1E1E6;
+  --accent:#0A66D8; --op:#E8641B; --glow:#FFD38A; --body:#3A3A40; --limb2:#B4B4BC;
+  --bed:#E4E4EA; --soft:#F0F0F4; --rest:#8E8E93;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#000000; --surface:#1C1C1E; --fg:#F5F5F7; --muted:#98989F; --line:#2E2E31;
+  --accent:#3D8BFF; --op:#FF8A3D; --glow:#FFE2A8; --body:#D8D8DD; --limb2:#66666D;
+  --bed:#2C2C2E; --soft:#232326; --rest:#8E8E93; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#000000; --surface:#1C1C1E; --fg:#F5F5F7; --muted:#98989F; --line:#2E2E31;
+  --accent:#3D8BFF; --op:#FF8A3D; --glow:#FFE2A8; --body:#D8D8DD; --limb2:#66666D;
+  --bed:#2C2C2E; --soft:#232326; --rest:#8E8E93; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:16px;line-height:1.45;padding:0 16px;-webkit-text-size-adjust:100%}
+body.running{padding-bottom:230px}
+.wrap{max-width:560px;margin:0 auto;padding-block:20px 40px;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+.eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-family:var(--display);font-size:30px;line-height:1.1;margin:0;letter-spacing:-.02em;text-wrap:balance}
+.sub{color:var(--muted);margin:0;font-size:15px}
+.today{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border-radius:16px;padding:14px 16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.today b{font-size:15px}
+.today small{display:block;color:var(--muted);font-size:13px}
+.dots{display:flex;gap:6px}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--op)}
+.dots i.on{background:var(--op)}
+.section{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:10px 4px -4px}
+.card{background:var(--surface);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.stage{background:var(--soft);border-radius:14px;overflow:hidden}
+.stage svg{display:block;width:100%;height:auto}
+.head{display:flex;align-items:flex-start;gap:12px}
+.num{flex:none;min-width:34px;height:34px;padding:0 8px;border-radius:17px;background:var(--fg);color:var(--bg);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
+.head h2{font-family:var(--display);font-size:19px;line-height:1.2;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.head .dose{display:inline-block;margin-top:4px;font-size:14px;font-weight:600;color:var(--op);font-variant-numeric:tabular-nums}
+.txt{margin:0;color:var(--fg);font-size:15px}
+.txt em{font-style:normal;font-weight:600}
+.note{font-size:14px;color:var(--op);font-weight:600;margin:0}
+.actions{display:flex;align-items:center;gap:10px}
+.go{flex:1;border:0;border-radius:12px;background:var(--accent);color:#fff;font:600 16px var(--font);padding:13px 14px;cursor:pointer}
+.go:focus-visible,.cnt:focus-visible,.sbtn:focus-visible,.copy:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
+.cnt{border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:12px;padding:12px 12px;font:600 14px var(--font);font-variant-numeric:tabular-nums;cursor:pointer;white-space:nowrap}
+.cnt.full{border-color:var(--op);color:var(--op)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);padding:0 4px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:18px;height:6px;border-radius:3px;display:inline-block}
+footer{background:var(--surface);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+footer h3{margin:0;font-size:16px}
+.tel{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tel strong{font-size:20px;font-variant-numeric:tabular-nums;user-select:all;-webkit-user-select:all}
+.copy{border:1px solid var(--line);background:transparent;color:var(--accent);border-radius:10px;padding:6px 12px;font:600 14px var(--font);cursor:pointer}
+.fine{color:var(--muted);font-size:13px;margin:0}
+
+/* figure */
+.f{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.b{stroke:var(--body);stroke-width:9}
+.o{stroke:var(--op);stroke-width:10}
+.k{stroke:var(--limb2);stroke-width:9}
+.g{stroke:var(--glow);stroke-width:4}
+.hd{fill:var(--body)}
+.bed{fill:var(--bed)}
+.floor{stroke:var(--limb2);stroke-width:2}
+.ar{stroke:var(--accent);stroke-width:2.5;fill:none;stroke-linecap:round}
+.arh{fill:var(--accent)}
+.lbl{fill:var(--muted);font:600 12px var(--font)}
+.lblo{fill:var(--op);font:700 12px var(--font)}
+.leg2{fill:var(--bed);stroke-width:2.5}
+.quad{fill:var(--glow)}
+
+/* timer sheet */
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:0 12px calc(12px + env(safe-area-inset-bottom,0px))}
+.sheet-in{max-width:560px;margin:0 auto;background:var(--surface);border-radius:22px;padding:16px;box-shadow:0 -4px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:8px}
+.s-top{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted);font-weight:600}
+.s-top span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-top span:last-child{font-variant-numeric:tabular-nums;flex:none}
+.s-mid{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+#sPhase{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.15;min-width:0}
+#sTime{font-family:var(--display);font-size:52px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;flex:none}
+.hold #sPhase,.hold #sTime{color:var(--op)}
+.rest #sPhase,.rest #sTime{color:var(--rest)}
+.bar{height:6px;background:var(--soft);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--op);border-radius:3px}
+.rest .bar i{background:var(--rest)}
+.s-btns{display:flex;gap:10px;margin-top:4px}
+.sbtn{flex:1;border:0;border-radius:12px;padding:12px;font:600 16px var(--font);cursor:pointer;background:var(--soft);color:var(--fg)}
+.sbtn.stop{color:#E5383B}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Fisioterapia · Humanitas</div>
+    <h1>Esercizi ginocchio sinistro</h1>
+    <p class="sub">Post-intervento crociato. Da fare almeno 3 volte al giorno.</p>
+  </header>
+
+  <div class="today">
+    <div><b id="roundTxt">Giri completati oggi</b><small id="roundSub">Un giro = tutti e 7 gli esercizi</small></div>
+    <div class="dots" id="dots"><i></i><i></i><i></i></div>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:var(--op)"></i>Gamba operata (SX)</span>
+    <span><i style="background:var(--glow)"></i>Muscolo che lavora</span>
+  </div>
+
+  <div id="list"></div>
+
+  <footer>
+    <h3>Per informazioni</h3>
+    <div>Palestra ambulatoriale · lun–ven 8:00–12:30</div>
+    <div class="tel"><strong id="tel">02 8224 6741</strong><button class="copy" id="copyTel" type="button">Copia</button></div>
+    <div>Chiedere di Paolo, Elisa o Massimiliano</div>
+    <p class="fine">Le animazioni sono schematiche: in caso di dubbio vale la scheda dei fisioterapisti. Dolore insolito, gonfiore o febbre: chiama il reparto.</p>
+  </footer>
+</div>
+
+<div id="sheet" hidden>
+  <div class="sheet-in" id="sheetIn">
+    <div class="s-top"><span id="sName"></span><span id="sRep"></span></div>
+    <div class="s-mid"><div id="sPhase"></div><div id="sTime"></div></div>
+    <div class="bar"><i id="sBar"></i></div>
+    <div class="s-btns"><button class="sbtn" id="bPause" type="button">Pausa</button><button class="sbtn stop" id="bStop" type="button">Stop</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const SP='.45 0 .25 1';
+const sp=n=>Array(n).fill(SP).join(';');
+function poly(c,f,a){
+  let s=`<polyline class="f ${c}" points="${f[0]}"`;
+  if(f.length>1) return s+`><animate attributeName="points" values="${f.join(';')}" keyTimes="${a.kt}" dur="${a.dur}s" repeatCount="indefinite" calcMode="spline" keySplines="${sp(f.length-1)}"/></polyline>`;
+  return s+'/>';
+}
+function glow(f,op,a){ // highlight line along a muscle, fading in/out
+  let s=`<polyline class="f g" points="${f[0]}" opacity="${op[0]}">`;
+  if(f.length>1) s+=`<animate attributeName="points" values="${f.join(';')}" keyTimes="${a.kt}" dur="${a.dur}s" repeatCount="indefinite" calcMode="spline" keySplines="${sp(f.length-1)}"/>`;
+  s+=`<animate attributeName="opacity" values="${op.join(';')}" keyTimes="${a.kt}" dur="${a.dur}s" repeatCount="indefinite" calcMode="spline" keySplines="${sp(op.length-1)}"/>`;
+  return s+'</polyline>';
+}
+function head(p,a){
+  let s=`<circle class="hd" r="12" cx="${p[0][0]}" cy="${p[0][1]}">`;
+  if(p.length>1){
+    s+=`<animate attributeName="cx" values="${p.map(q=>q[0]).join(';')}" keyTimes="${a.kt}" dur="${a.dur}s" repeatCount="indefinite" calcMode="spline" keySplines="${sp(p.length-1)}"/>`;
+    s+=`<animate attributeName="cy" values="${p.map(q=>q[1]).join(';')}" keyTimes="${a.kt}" dur="${a.dur}s" repeatCount="indefinite" calcMode="spline" keySplines="${sp(p.length-1)}"/>`;
+  }
+  return s+'</circle>';
+}
+function arrow(x1,y1,x2,y2){
+  const ang=Math.atan2(y2-y1,x2-x1),L=8,W=5;
+  const bx=x2-L*Math.cos(ang),by=y2-L*Math.sin(ang);
+  const px=-Math.sin(ang)*W,py=Math.cos(ang)*W;
+  return `<line class="ar" x1="${x1}" y1="${y1}" x2="${bx}" y2="${by}"/><polygon class="arh" points="${x2},${y2} ${bx+px},${by+py} ${bx-px},${by-py}"/>`;
+}
+const BED='<rect class="bed" x="24" y="120" width="262" height="12" rx="6"/>';
+const svg=(inner,dur,label)=>`<svg class="fig" data-dur="${dur}" viewBox="0 0 300 180" role="img" aria-label="${label}">${inner}</svg>`;
+
+/* ---------- figure ---------- */
+const FIG={};
+// S1 stretching posteriore coscia
+(()=>{const a={kt:'0;.25;.75;1',dur:7};
+FIG.s1=svg(
+ '<line class="floor" x1="20" y1="170" x2="290" y2="170"/>'+
+ '<rect class="bed" x="118" y="104" width="166" height="12" rx="6"/><line class="floor" x1="128" y1="116" x2="128" y2="170"/><line class="floor" x1="274" y1="116" x2="274" y2="170"/>'+
+ poly('k',['126,102 86,104 86,164 70,168'],a)+
+ poly('o',['126,102 182,102 236,102'],a)+
+ poly('o',['236,102 229,81'],a)+
+ glow(['140,107 174,107'],[0,.95,.95,0],a)+
+ poly('b',['126,102 122,46','126,102 162,60','126,102 162,60','126,102 122,46'],a)+
+ poly('b',['122,46 128,74 150,96','162,60 186,80 212,97','162,60 186,80 212,97','122,46 128,74 150,96'],a)+
+ head([[120,32],[171,49],[171,49],[120,32]],a)+
+ '<text class="lbl" x="214" y="74">piede a martello</text>'
+,7,'Seduto sul letto, gamba operata tesa, busto che si piega in avanti');})();
+// S2 polpaccio
+(()=>{const a={kt:'0;.25;.75;1',dur:6};
+FIG.s2=svg(
+ '<line class="floor" x1="20" y1="170" x2="290" y2="170"/>'+
+ '<rect class="bed" x="222" y="90" width="66" height="8" rx="3"/><line class="floor" x1="232" y1="98" x2="232" y2="170"/><line class="floor" x1="280" y1="98" x2="280" y2="170"/>'+
+ '<polygon class="bed" points="180,170 214,170 214,157"/>'+
+ '<text class="lbl" x="240" y="84">tavolo</text><text class="lbl" x="200" y="150">rialzo</text>'+
+ poly('k',['165,100 150,135 138,166 156,169','180,100 158,134 138,166 156,169','180,100 158,134 138,166 156,169','165,100 150,135 138,166 156,169'],a)+
+ poly('o',['165,100 173,133 182,164','180,100 181,133 182,164','180,100 181,133 182,164','165,100 173,133 182,164'],a)+
+ poly('o',['178,169 182,164 211,158'],a)+
+ glow(['175,139 180,156','181,139 182,156','181,139 182,156','175,139 180,156'],[0,.95,.95,0],a)+
+ poly('b',['165,100 162,48','180,100 181,48','180,100 181,48','165,100 162,48'],a)+
+ poly('b',['162,48 190,70 222,90','181,48 202,72 222,90','181,48 202,72 222,90','162,48 190,70 222,90'],a)+
+ head([[161,34],[182,34],[182,34],[161,34]],a)
+,6,'In piedi davanti al tavolo, avampiede operato sul rialzo, bacino che va in avanti');})();
+// 1 caviglia
+(()=>{const a={kt:'0;.5;1',dur:2.4};
+FIG.e1=svg(BED+
+ poly('b',['96,62 86,90 78,118'],a)+
+ poly('b',['106,116 96,62'],a)+
+ head([[92,47]],a)+
+ poly('o',['106,116 170,116 232,116'],a)+
+ poly('o',['232,116 221,95','232,116 253,101','232,116 221,95'],a)+
+ '<path class="ar" d="M210 84 Q 236 62 262 90"/>'+arrow(220,77,210,84)+arrow(254,80,262,90)
+,2.4,'Seduto a gambe tese, il piede va su e giù');})();
+// 2 quadricipite alternato (vista dall'alto)
+(()=>{const kt='0;.45;.5;.95;1';
+const q=(cx,vals)=>`<ellipse class="quad" cx="${cx}" cy="80" rx="8" ry="19" opacity="${vals.split(';')[0]}"><animate attributeName="opacity" values="${vals}" keyTimes="${kt}" dur="6s" repeatCount="indefinite"/></ellipse>`;
+FIG.e2=svg(
+ '<rect x="66" y="14" width="168" height="40" rx="18" fill="var(--limb2)"/>'+
+ '<rect class="leg2" x="88" y="36" width="36" height="122" rx="18" stroke="var(--op)"/>'+
+ '<rect class="leg2" x="176" y="36" width="36" height="122" rx="18" stroke="var(--limb2)"/>'+
+ '<circle cx="106" cy="114" r="8" fill="var(--surface)" stroke="var(--op)" stroke-width="2"/>'+
+ '<circle cx="194" cy="114" r="8" fill="var(--surface)" stroke="var(--limb2)" stroke-width="2"/>'+
+ q(115,'0;0;.95;.95;0')+q(185,'.95;.95;0;0;.95')+
+ '<text class="lblo" x="106" y="174" text-anchor="middle">SX operata</text>'+
+ '<text class="lbl" x="194" y="174" text-anchor="middle">DX sana</text>'+
+ '<text class="lbl" x="150" y="98" text-anchor="middle">vista</text><text class="lbl" x="150" y="112" text-anchor="middle">dall\'alto</text>'
+,6,'Vista dall\'alto delle gambe: si contrae prima la coscia destra, poi la sinistra');})();
+// 3 ginocchio contro il letto
+(()=>{const a={kt:'0;.3;.8;1',dur:4};
+FIG.e3=svg(BED+
+ poly('k',['106,116 150,74 176,116 194,116'],a)+
+ poly('o',['106,116 170,109 234,116','106,116 170,116 234,116','106,116 170,116 234,116','106,116 170,109 234,116'],a)+
+ poly('o',['234,116 236,94'],a)+
+ glow(['125,114 160,110','125,116 160,116','125,116 160,116','125,114 160,110'],[0,.95,.95,0],a)+
+ poly('b',['106,116 128,64'],a)+
+ poly('b',['128,64 140,88 153,80'],a)+
+ head([[134,51]],a)+
+ arrow(186,82,186,104)
+,4,'Seduto con la gamba sana piegata: la coscia operata spinge il ginocchio contro il letto');})();
+// 4 sollevamento gamba tesa
+(()=>{const a={kt:'0;.3;.65;.9;1',dur:6};
+FIG.e4=svg(BED+
+ poly('k',['106,116 150,74 176,116 194,116'],a)+
+ poly('o',['106,116 170,116 234,116','106,116 167,94 228,72','106,116 167,94 228,72','106,116 170,116 234,116','106,116 170,116 234,116'],a)+
+ poly('o',['234,116 235,94','228,72 220,51','228,72 220,51','234,116 235,94','234,116 235,94'],a)+
+ glow(['125,116 160,116','124,109 158,97','124,109 158,97','125,116 160,116','125,116 160,116'],[.95,.95,.95,.95,.95],a)+
+ poly('b',['106,116 128,64'],a)+
+ poly('b',['128,64 140,88 153,80'],a)+
+ head([[134,51]],a)+
+ arrow(262,108,262,74)+'<text class="lbl" x="242" y="64">6″</text>'
+,6,'Seduto con la gamba sana piegata: la gamba operata si solleva tesa');})();
+// 5 glutei
+(()=>{const a={kt:'0;.3;.8;1',dur:5};
+FIG.e5=svg(BED+
+ '<ellipse cx="46" cy="114" rx="22" ry="7" fill="var(--limb2)" opacity=".5"/>'+
+ head([[48,101]],a)+
+ poly('b',['62,110 138,112'],a)+
+ poly('k',['138,112 200,112 258,112'],a)+
+ poly('o',['140,115 200,115 256,115'],a)+
+ poly('o',['256,115 258,93'],a)+
+ poly('b',['72,112 104,116 128,118'],a)+
+ `<ellipse class="quad" cx="134" cy="119" rx="16" ry="5" opacity="0"><animate attributeName="opacity" values="0;.95;.95;0" keyTimes="${a.kt}" dur="5s" repeatCount="indefinite" calcMode="spline" keySplines="${sp(3)}"/></ellipse>`+
+ '<text class="lbl" x="134" y="150" text-anchor="middle">stringi i glutei</text>'
+,5,'Sdraiato a gambe tese, si stringono i glutei');})();
+
+/* ---------- esercizi ---------- */
+const EX=[
+ {id:'s1',sec:'Stretching',n:'S1',t:'Allungamento coscia posteriore',dose:'30″ × 5',hold:30,reps:5,rest:10,
+  txt:'Seduto sul bordo del letto con la <em>gamba operata distesa</em> sul letto e la gamba sana appoggiata a terra. Ginocchio teso e piede a martello (punta verso di te). Sbilanciati in avanti con le spalle finché senti tirare dietro la coscia. Tieni 30 secondi. Ripeti 5 volte.'},
+ {id:'s2',n:'S2',t:'Allungamento polpaccio',dose:'20″ × 5',hold:20,reps:5,rest:10,
+  txt:'In piedi davanti a un tavolo. Appoggia l’<em>avampiede del lato operato</em> su un rialzo, tallone a terra e ginocchio teso. Sbilanciati in avanti col bacino finché senti tirare il polpaccio. Tieni 20 secondi. Ripeti 5 volte.'},
+ {id:'e1',sec:'Esercizi',n:'1',t:'Movimento della caviglia',dose:'2–3 minuti',cont:180,
+  txt:'Seduto, gambe tese e leggermente divaricate. Fletti il piede su e giù con un movimento lento e continuo per 2–3 minuti.',
+  note:'Nei primi giorni ripetilo ogni due ore.'},
+ {id:'e2',n:'2',t:'Contrazione quadricipite alternata',dose:'6″ DX + 6″ SX × 10',alt:true,hold:6,reps:10,rest:3,
+  txt:'Seduto, gambe tese e leggermente divaricate. Contrai il quadricipite della <em>gamba sana (DX)</em> concentrandoti sulla parte più interna, sopra il ginocchio. Poi fai lo stesso con la <em>gamba operata (SX)</em>. 6 secondi per lato, alterna DX e SX per 10 volte.'},
+ {id:'e3',n:'3',t:'Ginocchio contro il letto',dose:'6″ × 10',hold:6,reps:10,rest:4,
+  txt:'Seduto, con il ginocchio sano piegato e le spalle in avanti. Contrai il quadricipite della gamba operata, spingendo gradualmente il ginocchio contro il letto. Tieni 6 secondi, rilassa. Ripeti 10 volte.'},
+ {id:'e4',n:'4',t:'Sollevamento a gamba tesa',dose:'6″ × 10',hold:6,reps:10,rest:4,
+  txt:'Stessa posizione. Con il quadricipite contratto come sopra, solleva lentamente la gamba operata tenendola tesa. Tieni su 6 secondi, torna giù lentamente e rilassa. Ripeti 10 volte.'},
+ {id:'e5',n:'5',t:'Contrazione glutei',dose:'10″ × 10',hold:10,reps:10,rest:4,
+  txt:'Sdraiato a pancia in su, gambe tese e leggermente divaricate. Stringi entrambi i glutei insieme e tieni 10 secondi. Rilassa. Ripeti 10 volte.'}
+];
+
+/* ---------- conteggio di oggi ---------- */
+const KEY='ginocchio-sx-v1';
+const today=(()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()})();
+let st={d:today,c:{}};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.d===today)st=s;}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const cnt=id=>st.c[id]||0;
+
+const list=document.getElementById('list');
+let html='';
+EX.forEach(e=>{
+  if(e.sec) html+=`<div class="section">${e.sec}</div>`;
+  html+=`<article class="card" id="c-${e.id}">
+   <div class="stage">${FIG[e.id]}</div>
+   <div class="head"><div class="num">${e.n}</div><div><h2>${e.t}</h2><span class="dose">${e.dose}</span></div></div>
+   <p class="txt">${e.txt}</p>${e.note?`<p class="note">${e.note}</p>`:''}
+   <div class="actions"><button class="go" type="button" data-go="${e.id}">Avvia timer</button>
+   <button class="cnt" type="button" data-cnt="${e.id}" aria-label="Segna come fatto"></button></div>
+  </article>`;
+});
+list.innerHTML=html;
+list.style.display='flex';list.style.flexDirection='column';list.style.gap='16px';
+
+function render(){
+  EX.forEach(e=>{const b=document.querySelector(`[data-cnt="${e.id}"]`);const n=cnt(e.id);
+    b.textContent=`Oggi ${n}/3`;b.classList.toggle('full',n>=3);});
+  const rounds=Math.min(...EX.map(e=>cnt(e.id)));
+  document.querySelectorAll('#dots i').forEach((d,i)=>d.classList.toggle('on',i<rounds));
+  document.getElementById('roundTxt').textContent=`Giri completati oggi: ${rounds} di 3`;
+}
+render();
+list.addEventListener('click',ev=>{
+  const g=ev.target.closest('[data-go]');if(g){start(g.dataset.go);return;}
+  const c=ev.target.closest('[data-cnt]');if(c){const id=c.dataset.cnt;st.c[id]=(cnt(id)+1)%4;save();render();}
+});
+
+/* reduced motion: ferma le animazioni sulla posa di lavoro */
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+  document.querySelectorAll('svg.fig').forEach(s=>{try{s.setCurrentTime(+s.dataset.dur*.5);s.pauseAnimations();}catch(e){}});
+}
+
+/* ---------- timer guidato ---------- */
+let ac=null;
+function beep(f=880,d=.15,v=.25){try{if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.type='sine';g.gain.setValueAtTime(v,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+d);}catch(e){}}
+function phasesOf(e){
+  const P=[{l:'Mettiti in posizione',t:5,k:'rest'}];
+  if(e.cont){P.push({l:'Caviglia su e giù',t:e.cont,k:'hold',r:1,R:1});return P;}
+  for(let i=1;i<=e.reps;i++){
+    if(e.alt){
+      P.push({l:'Contrai DX (sana)',t:e.hold,k:'hold',r:i,R:e.reps});
+      P.push({l:'Rilassa',t:e.rest,k:'rest',r:i,R:e.reps});
+      P.push({l:'Contrai SX (operata)',t:e.hold,k:'hold',r:i,R:e.reps});
+    }else P.push({l:'Tieni',t:e.hold,k:'hold',r:i,R:e.reps});
+    if(i<e.reps)P.push({l:'Riposo',t:e.rest,k:'rest',r:i,R:e.reps});
+  }
+  return P;
+}
+const sheet=document.getElementById('sheet'),sIn=document.getElementById('sheetIn');
+const $=id=>document.getElementById(id);
+let run=null,timer=null,wl=null;
+async function lock(){try{if(navigator.wakeLock)wl=await navigator.wakeLock.request('screen');}catch(e){}}
+function start(id){
+  stop(true);
+  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume&&ac.resume();}catch(e){}
+  const e=EX.find(x=>x.id===id);
+  run={e,P:phasesOf(e),i:0,end:performance.now()+5000,paused:false,rem:0,lastSec:null,done:false};
+  $('sName').textContent=e.n+' · '+e.t;
+  sheet.hidden=false;document.body.classList.add('running');
+  $('bPause').textContent='Pausa';
+  lock();beep(660);
+  timer=setInterval(tick,100);tick();
+}
+function enter(i){
+  run.i=i;const p=run.P[i];run.end=performance.now()+p.t*1000;run.lastSec=null;
+  if(p.k==='hold')beep(990,.25);else beep(520,.2);
+}
+function tick(){
+  if(!run||run.paused||run.done)return;
+  const p=run.P[run.i];let rem=run.end-performance.now();
+  if(rem<=0){
+    if(run.i+1>=run.P.length){finish();return;}
+    enter(run.i+1);return tick();
+  }
+  const s=Math.ceil(rem/1000);
+  if(s!==run.lastSec){run.lastSec=s;if(s<=3&&p.k==='rest'&&run.i+1<run.P.length)beep(700,.07,.15);}
+  sIn.className='sheet-in '+p.k;
+  $('sPhase').textContent=p.l;
+  $('sTime').textContent=s>=60?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):s;
+  $('sRep').textContent=p.R>1?`Rip. ${p.r}/${p.R}`:(p.r?'':'');
+  $('sBar').style.width=(100*(1-rem/(p.t*1000)))+'%';
+}
+function finish(){
+  run.done=true;clearInterval(timer);
+  beep(880,.15);setTimeout(()=>beep(1100,.15),180);setTimeout(()=>beep(1320,.3),360);
+  st.c[run.e.id]=Math.min(3,cnt(run.e.id)+1);save();render();
+  sIn.className='sheet-in hold';$('sPhase').textContent='Fatto!';$('sTime').textContent='✓';$('sBar').style.width='100%';$('sRep').textContent='';
+  $('bPause').textContent='Chiudi';
+}
+function stop(silent){
+  clearInterval(timer);run=null;sheet.hidden=true;document.body.classList.remove('running');
+  try{wl&&wl.release();}catch(e){}wl=null;
+}
+$('bStop').onclick=()=>stop();
+$('bPause').onclick=()=>{
+  if(!run)return;
+  if(run.done){stop();return;}
+  if(!run.paused){run.paused=true;run.rem=run.end-performance.now();$('bPause').textContent='Riprendi';}
+  else{run.paused=false;run.end=performance.now()+run.rem;$('bPause').textContent='Pausa';}
+};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&run&&!run.done)lock();});
+
+$('copyTel').onclick=async()=>{const t='0282246741';try{await navigator.clipboard.writeText(t);$('copyTel').textContent='Copiato';}catch(e){const r=document.createRange();r.selectNodeContents($('tel'));const s=getSelection();s.removeAllRanges();s.addRange(r);}};
+})();
+</script>
+
+</body>
+</html>
