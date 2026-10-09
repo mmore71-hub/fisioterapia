@@ -62,6 +62,19 @@ footer h3{margin:0;font-size:16px}
 .tel strong{font-size:20px;font-variant-numeric:tabular-nums;user-select:all;-webkit-user-select:all}
 .copy{border:1px solid var(--line);background:transparent;color:var(--accent);border-radius:10px;padding:6px 12px;font:600 14px var(--font);cursor:pointer}
 .fine{color:var(--muted);font-size:13px;margin:0}
+.dbstate{font-size:13px;color:var(--muted);padding:0 4px;margin-top:-8px;display:flex;align-items:center;gap:6px}
+.dbstate::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--limb2);flex:none}
+.dbstate.ok::before{background:#34C759}
+.dbstate.err{color:#E5383B}.dbstate.err::before{background:#E5383B}
+.hist{background:var(--surface);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.hist h3{margin:0;font-size:16px}
+#hist{display:flex;flex-direction:column;gap:8px}
+.hrow{display:grid;grid-template-columns:96px 1fr 36px;align-items:center;gap:10px;font-size:14px}
+.hd8{color:var(--muted)}
+.hbar{height:8px;background:var(--soft);border-radius:4px;overflow:hidden}
+.hbar i{display:block;height:100%;background:var(--op);border-radius:4px}
+.hg{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted)}
+.hg.full{color:var(--op)}
 
 /* figure */
 .f{fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -112,6 +125,7 @@ footer h3{margin:0;font-size:16px}
     <div><b id="roundTxt">Giri completati oggi</b><small id="roundSub">Un giro = tutti e 7 gli esercizi</small></div>
     <div class="dots" id="dots"><i></i><i></i><i></i></div>
   </div>
+  <div class="dbstate" id="dbState"></div>
 
   <div class="legend">
     <span><i style="background:var(--op)"></i>Gamba operata (SX)</span>
@@ -119,6 +133,11 @@ footer h3{margin:0;font-size:16px}
   </div>
 
   <div id="list"></div>
+
+  <section class="hist" id="histCard">
+    <h3>Ultimi 14 giorni</h3>
+    <div id="hist"></div>
+  </section>
 
   <footer>
     <h3>Per informazioni</h3>
@@ -138,6 +157,21 @@ footer h3{margin:0;font-size:16px}
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+/* ===== FIREBASE: stesso progetto della dieta (dieta-spesa), Realtime Database ===== */
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyCX5h62pNt0qUuav5ez3Mbj_E7GCNaEZP4",
+  authDomain:"dieta-spesa.firebaseapp.com",
+  databaseURL:"https://dieta-spesa-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"dieta-spesa",
+  storageBucket:"dieta-spesa.firebasestorage.app",
+  messagingSenderId:"135438105741",
+  appId:"1:135438105741:web:2defbc93bfd955750b76c4"
+};
+const DB_PATH="fisioterapia_ginocchio_sx";
+</script>
 <script>
 (function(){
 const SP='.45 0 .25 1';
@@ -284,11 +318,38 @@ const EX=[
 
 /* ---------- conteggio di oggi ---------- */
 const KEY='ginocchio-sx-v1';
-const today=(()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()})();
+const pad=n=>String(n).padStart(2,'0');
+const dayKey=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=dayKey(new Date());
 let st={d:today,c:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.d===today)st=s;}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const saveLocal=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
 const cnt=id=>st.c[id]||0;
+
+/* --- database (Realtime Database): fisioterapia_ginocchio_sx/AAAA-MM-GG/c/<esercizio> --- */
+let db=null,ref=null;
+const dbState=document.getElementById('dbState');
+function setDb(txt,cls){dbState.textContent=txt;dbState.className='dbstate '+(cls||'');}
+try{
+  if(window.firebase&&FIREBASE_CONFIG.apiKey){
+    const app=firebase.apps.length?firebase.app():firebase.initializeApp(FIREBASE_CONFIG);
+    db=app.database();ref=db.ref(DB_PATH);
+  }
+}catch(e){db=null;}
+if(!db) setDb('Salvato solo su questo telefono','off');
+else setDb('Connessione al database…','');
+
+function save(id){
+  saveLocal();
+  if(!db||!id)return;
+  const upd={};
+  upd[today+'/c/'+id]=cnt(id);
+  upd[today+'/giri']=Math.min(...EX.map(e=>cnt(e.id)));
+  upd[today+'/aggiornato']=firebase.database.ServerValue.TIMESTAMP;
+  ref.update(upd)
+    .then(()=>setDb('Salvato nel database','ok'))
+    .catch(err=>setDb('Errore salvataggio: '+(err.code||err.message),'err'));
+}
 
 const list=document.getElementById('list');
 let html='';
@@ -313,9 +374,47 @@ function render(){
   document.getElementById('roundTxt').textContent=`Giri completati oggi: ${rounds} di 3`;
 }
 render();
+/* sync live di oggi + storico */
+const MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+const GG=['dom','lun','mar','mer','gio','ven','sab'];
+function renderHistory(map){
+  const box=document.getElementById('hist');let h='';
+  for(let i=0;i<14;i++){
+    const d=new Date();d.setDate(d.getDate()-i);const k=dayKey(d);
+    const c=(map[k]&&map[k].c)||{};
+    const g=Math.min(...EX.map(e=>c[e.id]||0));
+    const tot=EX.reduce((a,e)=>a+Math.min(3,c[e.id]||0),0);
+    h+=`<div class="hrow"><span class="hd8">${i===0?'Oggi':GG[d.getDay()]+' '+d.getDate()+' '+MESI[d.getMonth()]}</span>
+      <span class="hbar"><i style="width:${Math.round(tot/21*100)}%"></i></span>
+      <span class="hg ${g>=3?'full':''}">${g}/3</span></div>`;
+  }
+  box.innerHTML=h;
+}
+if(db){
+  let first=true;
+  ref.child(today+'/c').on('value',snap=>{
+    const c=snap.val()||{};
+    if(first){
+      // primo caricamento: tiene il valore più alto e rimanda al db quelli locali più alti
+      first=false;
+      EX.forEach(e=>{const v=c[e.id]||0;if(v>cnt(e.id))st.c[e.id]=v;else if(cnt(e.id)>v)save(e.id);});
+    }else{
+      EX.forEach(e=>{st.c[e.id]=c[e.id]||0;});
+    }
+    saveLocal();render();
+    setDb('Sincronizzato con il database','ok');
+  },err=>setDb('Database non raggiungibile: '+(err.code||err.message),'err'));
+  db.ref('.info/connected').on('value',s=>{if(s.val()===false&&!first)setDb('Offline: salvo appena torna la rete','');});
+  const from=new Date();from.setDate(from.getDate()-13);
+  ref.orderByKey().startAt(dayKey(from)).on('value',snap=>{
+    const m=snap.val()||{};m[today]={c:st.c};renderHistory(m);
+  },()=>renderHistory({[today]:{c:st.c}}));
+}else{
+  document.getElementById('histCard').hidden=true;
+}
 list.addEventListener('click',ev=>{
   const g=ev.target.closest('[data-go]');if(g){start(g.dataset.go);return;}
-  const c=ev.target.closest('[data-cnt]');if(c){const id=c.dataset.cnt;st.c[id]=(cnt(id)+1)%4;save();render();}
+  const c=ev.target.closest('[data-cnt]');if(c){const id=c.dataset.cnt;st.c[id]=(cnt(id)+1)%4;save(id);render();}
 });
 
 /* reduced motion: ferma le animazioni sulla posa di lavoro */
@@ -376,7 +475,7 @@ function tick(){
 function finish(){
   run.done=true;clearInterval(timer);
   beep(880,.15);setTimeout(()=>beep(1100,.15),180);setTimeout(()=>beep(1320,.3),360);
-  st.c[run.e.id]=Math.min(3,cnt(run.e.id)+1);save();render();
+  st.c[run.e.id]=Math.min(3,cnt(run.e.id)+1);save(run.e.id);render();
   sIn.className='sheet-in hold';$('sPhase').textContent='Fatto!';$('sTime').textContent='✓';$('sBar').style.width='100%';$('sRep').textContent='';
   $('bPause').textContent='Chiudi';
 }
